@@ -24,6 +24,31 @@ class VisualEffectsManager {
       }
     }
 
+    // Update custom particles
+    for (let i = this.particles.length - 1; i >= 0; i--) {
+      const p = this.particles[i];
+      p.x += p.vx || 0;
+      p.y += p.vy || 0;
+      if (p.ax) p.vx += p.ax;
+      if (p.ay) p.vy += p.ay;
+      p.life -= 1 / 60;
+      if (p.sizeDecay) p.size = Math.max(0.1, p.size - p.sizeDecay);
+      if (p.alphaDecay) p.alpha = Math.max(0, p.alpha - p.alphaDecay);
+      
+      if (p.type === 'ring') {
+        p.radius += p.speed;
+      } else if (p.type === 'lightning') {
+        p.x += (Math.random() - 0.5) * 6;
+        p.y += (Math.random() - 0.5) * 6;
+      } else if (p.type === 'cube') {
+        p.rotation += p.rotSpeed || 0.05;
+      }
+
+      if (p.life <= 0 || (p.alpha !== undefined && p.alpha <= 0)) {
+        this.particles.splice(i, 1);
+      }
+    }
+
     // Update screen shake
     if (this.screenShakeTime > 0) {
       this.screenShakeTime--;
@@ -59,16 +84,266 @@ class VisualEffectsManager {
   }
 
   /**
+   * Spawn attack limb trailing particles
+   */
+  spawnTrailParticle(x, y, characterType) {
+    let color = '#ffffff';
+    let type = 'circle';
+    let vx = (Math.random() - 0.5) * 2;
+    let vy = (Math.random() - 0.5) * 2;
+    let size = 3 + Math.random() * 4;
+    let life = 0.2 + Math.random() * 0.25;
+    let alpha = 1.0;
+    let alphaDecay = 0.04;
+    let sizeDecay = 0.1;
+    let rotation = 0;
+    let rotSpeed = 0;
+
+    switch (characterType) {
+      case 'blaze': // Rising orange/red embers
+        color = Math.random() < 0.6 ? '#ff3b30' : '#ff9500';
+        vy = -1 - Math.random() * 2;
+        vx = (Math.random() - 0.5) * 1.5;
+        life = 0.3 + Math.random() * 0.3;
+        break;
+      case 'frost': // Blue spinning diamonds / frost mist
+        color = Math.random() < 0.5 ? '#00f3ff' : '#a5f3fc';
+        type = 'cube';
+        rotation = Math.random() * Math.PI;
+        rotSpeed = (Math.random() - 0.5) * 0.2;
+        size = 4 + Math.random() * 3;
+        life = 0.4 + Math.random() * 0.3;
+        break;
+      case 'volt': // Electric yellow jittery lines/dots
+        color = '#ffea00';
+        type = 'lightning';
+        vx = (Math.random() - 0.5) * 4;
+        vy = (Math.random() - 0.5) * 4;
+        life = 0.15 + Math.random() * 0.15;
+        break;
+      case 'titan': // Heavy purple block fragments
+        color = '#af52de';
+        type = 'cube';
+        rotation = Math.random() * Math.PI;
+        rotSpeed = (Math.random() - 0.5) * 0.08;
+        size = 6 + Math.random() * 5;
+        vy = Math.random() * 0.5; // fall slowly
+        life = 0.5 + Math.random() * 0.4;
+        break;
+    }
+
+    this.particles.push({
+      x, y, vx, vy, color, type, size, life, alpha, alphaDecay, sizeDecay, rotation, rotSpeed
+    });
+  }
+
+  /**
+   * Spawns tag-in digital portals and horizontal neon warp grids
+   */
+  spawnTagBurst(x, y, color) {
+    // 1. Digital expanding energy ring
+    this.particles.push({
+      x: x,
+      y: y,
+      type: 'ring',
+      radius: 5,
+      speed: 6.5,
+      color: color,
+      life: 0.5,
+      alpha: 1.0,
+      alphaDecay: 0.035,
+      lineWidth: 3.5
+    });
+
+    // 2. Vertical portal laser beams
+    for (let i = 0; i < 6; i++) {
+      const offsetX = (Math.random() - 0.5) * 50;
+      this.particles.push({
+        x: x + offsetX,
+        y: y + 80,
+        type: 'beam',
+        length: 80 + Math.random() * 120,
+        vx: 0,
+        vy: -8 - Math.random() * 10,
+        color: color,
+        life: 0.3 + Math.random() * 0.3,
+        alpha: 1.0,
+        alphaDecay: 0.05,
+        lineWidth: 1.5 + Math.random() * 2
+      });
+    }
+
+    // 3. Digital code shards expanding
+    for (let i = 0; i < 20; i++) {
+      const angle = Math.random() * Math.PI * 2;
+      const speed = 2 + Math.random() * 6;
+      this.particles.push({
+        x: x,
+        y: y,
+        type: 'cube',
+        vx: Math.cos(angle) * speed,
+        vy: Math.sin(angle) * speed - 2,
+        rotation: Math.random() * Math.PI,
+        rotSpeed: (Math.random() - 0.5) * 0.15,
+        size: 3 + Math.random() * 6,
+        color: color,
+        life: 0.4 + Math.random() * 0.4,
+        alpha: 1.0,
+        alphaDecay: 0.03,
+        sizeDecay: 0.08
+      });
+    }
+  }
+
+  /**
+   * Spawns impact ring expansion and cross-hatching laser sparks
+   */
+  spawnImpactShockwave(x, y, color) {
+    // Expand ring
+    this.particles.push({
+      x: x,
+      y: y,
+      type: 'ring',
+      radius: 10,
+      speed: 4.5,
+      color: color,
+      life: 0.3,
+      alpha: 1.0,
+      alphaDecay: 0.05,
+      lineWidth: 2.5
+    });
+
+    // Spawn specialized spark lines shooting outwards
+    for (let i = 0; i < 8; i++) {
+      const angle = Math.random() * Math.PI * 2;
+      const length = 15 + Math.random() * 25;
+      const speed = 3 + Math.random() * 5;
+      const targetX = x + Math.cos(angle) * length;
+      const targetY = y + Math.sin(angle) * length;
+      
+      this.particles.push({
+        x: x,
+        y: y,
+        type: 'line',
+        targetX: targetX,
+        targetY: targetY,
+        vx: Math.cos(angle) * speed,
+        vy: Math.sin(angle) * speed,
+        color: color,
+        life: 0.25,
+        alpha: 1.0,
+        alphaDecay: 0.06,
+        lineWidth: 1.5
+      });
+    }
+  }
+
+  /**
    * Draws dynamic particles (e.g. fire, ice, electric)
    */
   drawEffects(ctx) {
     ctx.save();
-    ctx.shadowBlur = 8;
+    
+    // Draw sparks
+    ctx.shadowBlur = 10;
     this.sparks.forEach(s => {
       ctx.shadowColor = s.color;
       ctx.fillStyle = s.color;
-      ctx.fillRect(s.x - s.size / 2, s.y - s.size / 2, s.size, s.size);
+      ctx.beginPath();
+      ctx.arc(s.x, s.y, s.size, 0, Math.PI * 2);
+      ctx.fill();
     });
+
+    // Draw particles
+    this.particles.forEach(p => {
+      ctx.save();
+      ctx.globalAlpha = p.alpha !== undefined ? p.alpha : 1.0;
+      ctx.shadowBlur = p.glow !== undefined ? p.glow : 12;
+      ctx.shadowColor = p.color;
+      ctx.fillStyle = p.color;
+      ctx.strokeStyle = p.color;
+      ctx.lineWidth = p.lineWidth || 2;
+
+      if (p.type === 'ring') {
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+        ctx.stroke();
+      } else if (p.type === 'cube') {
+        ctx.translate(p.x, p.y);
+        ctx.rotate(p.rotation || 0);
+        ctx.fillRect(-p.size / 2, -p.size / 2, p.size, p.size);
+      } else if (p.type === 'beam') {
+        ctx.beginPath();
+        ctx.moveTo(p.x, p.y);
+        ctx.lineTo(p.x, p.y - p.length);
+        ctx.stroke();
+      } else if (p.type === 'line') {
+        ctx.beginPath();
+        ctx.moveTo(p.x, p.y);
+        ctx.lineTo(p.targetX || p.x, p.targetY || p.y);
+        ctx.stroke();
+      } else {
+        // Standard circle particle
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      ctx.restore();
+    });
+
+    ctx.restore();
+  }
+
+  drawElementalSlash(ctx, x, y, fighter) {
+    ctx.save();
+    ctx.shadowBlur = 20;
+    ctx.shadowColor = fighter.color;
+    ctx.strokeStyle = fighter.color;
+    ctx.lineWidth = 4.5;
+    const progress = fighter.attackFrameProgress || 0.5;
+    const dir = fighter.direction;
+    
+    if (fighter.characterType === 'blaze') {
+      ctx.beginPath();
+      // Draw fire crescent arc sweeping forward
+      ctx.arc(x - dir * 15, y, 35, -Math.PI / 4, Math.PI / 4, dir < 0);
+      ctx.stroke();
+    } else if (fighter.characterType === 'frost') {
+      // Draw multiple spiky ice shard triangles growing from hand/foot
+      ctx.fillStyle = 'rgba(0, 243, 255, 0.4)';
+      ctx.beginPath();
+      ctx.moveTo(x, y);
+      ctx.lineTo(x + dir * 30, y - 10);
+      ctx.lineTo(x + dir * 20, y);
+      ctx.lineTo(x + dir * 35, y + 12);
+      ctx.lineTo(x + dir * 15, y + 3);
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+    } else if (fighter.characterType === 'volt') {
+      // Draw zig-zag lightning bolts protruding forward
+      ctx.beginPath();
+      ctx.moveTo(x, y);
+      let curX = x;
+      let curY = y;
+      for (let i = 0; i < 4; i++) {
+        curX += dir * 8 + (Math.random() - 0.5) * 8;
+        curY += (Math.random() - 0.5) * 12;
+        ctx.lineTo(curX, curY);
+      }
+      ctx.stroke();
+    } else if (fighter.characterType === 'titan') {
+      // Draw heavy shield/impact geometric purple polygon edge
+      ctx.fillStyle = 'rgba(175, 82, 222, 0.35)';
+      ctx.beginPath();
+      ctx.moveTo(x - 5, y - 20);
+      ctx.lineTo(x + dir * 20, y - 20);
+      ctx.lineTo(x + dir * 20, y + 20);
+      ctx.lineTo(x - 5, y + 20);
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+    }
     ctx.restore();
   }
 
@@ -320,6 +595,22 @@ class VisualEffectsManager {
     
     // Draw bones pipeline
     this.renderBones(ctx, fighter.x, fighter.y, joints, fighter.direction);
+
+    // 2.5 Spawn attacking elemental trails and render slash overlays
+    if (fighter.state === 'ATTACK' && fighter.activeAttackType) {
+      const isPunch = ['light', 'medium', 'sp1'].includes(fighter.activeAttackType) && 
+                      (fighter.characterType === 'blaze' || fighter.characterType === 'volt');
+      const attackingJoint = isPunch ? joints.handFront : joints.footFront;
+      
+      const worldX = fighter.x + attackingJoint.x;
+      const worldY = fighter.y + attackingJoint.y;
+      
+      // Spawn trail particles
+      this.spawnTrailParticle(worldX, worldY, fighter.characterType);
+      
+      // Render custom elemental energy slash shapes
+      this.drawElementalSlash(ctx, worldX, worldY, fighter);
+    }
 
     // 3. Draw a glowing shield if the fighter is blocking
     if (fighter.state === 'BLOCK') {

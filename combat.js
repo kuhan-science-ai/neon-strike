@@ -98,6 +98,7 @@ export function registerHit(attacker, defender, attackInfo) {
     const sparkX = defender.x - defender.direction * 18;
     const sparkY = defender.y - defender.height * 0.7;
     fx.spawnHitSparks(sparkX, sparkY, '#00f3ff', 5);
+    fx.spawnImpactShockwave(sparkX, sparkY, '#00f3ff');
     fx.triggerScreenShake(3, 1.5);
   } else {
     // Clean Hit!
@@ -126,12 +127,15 @@ export function registerHit(attacker, defender, attackInfo) {
     defender.meter = Math.min(defender.maxMeter, defender.meter + attackInfo.meterGain * 0.6);
 
     // Dynamic camera screenshake and slow-motion freeze for heavy hits
+    const hitY = defender.y - defender.height * 0.6;
     if (attackInfo === ATTACK_DATA.heavy) {
       fx.triggerScreenShake(12, 6.0);
-      fx.spawnHitSparks(defender.x, defender.y - defender.height * 0.6, '#ff007f', 16);
+      fx.spawnHitSparks(defender.x, hitY, '#ff007f', 16);
+      fx.spawnImpactShockwave(defender.x, hitY, '#ff007f');
     } else {
       fx.triggerScreenShake(5, 2.5);
-      fx.spawnHitSparks(defender.x, defender.y - defender.height * 0.6, '#ffea00', 8);
+      fx.spawnHitSparks(defender.x, hitY, '#ffea00', 8);
+      fx.spawnImpactShockwave(defender.x, hitY, '#ffea00');
     }
 
     // Accumulate combo damage tracked in player manager

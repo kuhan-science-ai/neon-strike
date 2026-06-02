@@ -141,8 +141,8 @@ class EnemyTeamManager {
   tagSwitch() {
     if (this.assistCooldown > 0 || this.reserveFighter.health <= 0) return;
 
-    // Tag transition visual effect
-    fx.spawnHitSparks(this.activeFighter.x, this.activeFighter.y - 50, '#fff', 8);
+    // Upgraded tag transition visual effect
+    fx.spawnTagBurst(this.activeFighter.x, this.activeFighter.y - 50, this.activeFighter.color);
 
     const temp = this.activeFighter;
     this.activeFighter = this.reserveFighter;
