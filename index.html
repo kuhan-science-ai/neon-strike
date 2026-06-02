@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>NEON STRIKE: 2.5D Tag-Team Fighting</title>
+  <!-- Google Fonts for Cyberpunk/Futuristic design -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="./style.css">
+</head>
+<body>
+  <!-- Futuristic Scanlines/CRT effect -->
+  <div class="crt-overlay"></div>
+  <div class="scanlines"></div>
+
+  <!-- Game Container -->
+  <div id="game-container">
+    <canvas id="game-canvas"></canvas>
+
+    <!-- UI Overlay Layer -->
+    <div id="ui-layer">
+      <!-- MAIN MENU -->
+      <div id="main-menu" class="menu-overlay active">
+        <h1 class="neon-text glow-blue">NEON STRIKE</h1>
+        <h2 class="sub-title glow-red">TAG TEAM DUEL</h2>
+        <div class="menu-buttons">
+          <button id="btn-vs-ai" class="menu-btn">VS AI</button>
+          <button id="btn-vs-player" class="menu-btn">VS PLAYER (LOCAL)</button>
+          <button id="btn-training" class="menu-btn">TRAINING MODE</button>
+          <button id="btn-settings" class="menu-btn">SETTINGS</button>
+        </div>
+        <div class="footer-note">PRESS START TO FIGHT</div>
+      </div>
+
+      <!-- SETTINGS MENU -->
+      <div id="settings-menu" class="menu-overlay hidden">
+        <h2 class="neon-text glow-blue">SETTINGS</h2>
+        <div class="settings-content">
+          <div class="settings-row">
+            <label for="setting-volume">MUSIC VOLUME</label>
+            <input type="range" id="setting-volume" min="0" max="100" value="70">
+          </div>
+          <div class="settings-row">
+            <label for="setting-sfx">SFX VOLUME</label>
+            <input type="range" id="setting-sfx" min="0" max="100" value="80">
+          </div>
+          <div class="settings-row">
+            <label for="setting-difficulty">AI DIFFICULTY</label>
+            <select id="setting-difficulty">
+              <option value="easy">EASY</option>
+              <option value="medium" selected>MEDIUM</option>
+              <option value="hard">HARD</option>
+            </select>
+          </div>
+        </div>
+        <button id="btn-settings-back" class="menu-btn">BACK</button>
+      </div>
+
+      <!-- CHARACTER SELECT -->
+      <div id="char-select" class="menu-overlay hidden">
+        <h2 class="neon-text glow-red">SELECT YOUR TEAM</h2>
+        <div class="selection-columns">
+          <!-- Player 1 / Player Team Selection -->
+          <div class="selection-panel" id="p1-selection">
+            <h3 class="glow-blue">PLAYER TEAM</h3>
+            <div class="selected-fighters">
+              <div class="slot slot-1" id="p1-slot-1">
+                <span class="slot-label">ACTIVE</span>
+                <span class="slot-name">SELECT...</span>
+              </div>
+              <div class="slot slot-2" id="p1-slot-2">
+                <span class="slot-label">RESERVE</span>
+                <span class="slot-name">SELECT...</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Character Grid -->
+          <div class="char-grid">
+            <div class="char-card" data-char="blaze">
+              <div class="char-avatar blaze-avatar"></div>
+              <span class="char-name">BLAZE</span>
+              <span class="char-role">RUSHDOWN</span>
+            </div>
+            <div class="char-card" data-char="frost">
+              <div class="char-avatar frost-avatar"></div>
+              <span class="char-name">FROST</span>
+              <span class="char-role">ZONER</span>
+            </div>
+            <div class="char-card" data-char="volt">
+              <div class="char-avatar volt-avatar"></div>
+              <span class="char-name">VOLT</span>
+              <span class="char-role">SPEED</span>
+            </div>
+            <div class="char-card" data-char="titan">
+              <div class="char-avatar titan-avatar"></div>
+              <span class="char-name">TITAN</span>
+              <span class="char-role">TANK</span>
+            </div>
+          </div>
+
+          <!-- Player 2 / AI Team Selection -->
+          <div class="selection-panel" id="p2-selection">
+            <h3 class="glow-red">OPPONENT TEAM</h3>
+            <div class="selected-fighters">
+              <div class="slot slot-1" id="p2-slot-1">
+                <span class="slot-label">ACTIVE</span>
+                <span class="slot-name">SELECT...</span>
+              </div>
+              <div class="slot slot-2" id="p2-slot-2">
+                <span class="slot-label">RESERVE</span>
+                <span class="slot-name">SELECT...</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="selection-actions">
+          <button id="btn-char-back" class="menu-btn">MAIN MENU</button>
+          <button id="btn-fight" class="menu-btn disabled">READY TO FIGHT</button>
+        </div>
+      </div>
+
+      <!-- HUD (IN-GAME HEADS UP DISPLAY) -->
+      <div id="battle-hud" class="hud-overlay hidden">
+        <!-- Top bar: Health, round timer, character portraits -->
+        <div class="hud-header">
+          <!-- Player Team HUD -->
+          <div class="hud-team team-left">
+            <div class="hud-portraits">
+              <div class="portrait active-portrait" id="hud-p1-active-pic"></div>
+              <div class="portrait reserve-portrait" id="hud-p1-reserve-pic">
+                <span class="assist-badge" id="hud-p1-assist-cooldown">READY</span>
+              </div>
+            </div>
+            <div class="bars-container">
+              <div class="fighter-name" id="hud-p1-active-name">BLAZE</div>
+              <div class="health-bar-bg">
+                <div class="health-bar-fill fill-p1" id="hud-p1-health"></div>
+                <div class="health-bar-red" id="hud-p1-health-red"></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Timer & Round Counter -->
+          <div class="hud-timer-container">
+            <div class="round-counter">ROUND <span id="hud-round-num">1</span></div>
+            <div class="timer-value" id="hud-timer">99</div>
+            <div class="round-wins">
+              <div class="win-dots" id="p1-wins">
+                <span class="dot"></span>
+                <span class="dot"></span>
+              </div>
+              <div class="win-dots" id="p2-wins">
+                <span class="dot"></span>
+                <span class="dot"></span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Opponent Team HUD -->
+          <div class="hud-team team-right">
+            <div class="bars-container">
+              <div class="fighter-name" id="hud-p2-active-name">FROST</div>
+              <div class="health-bar-bg">
+                <div class="health-bar-fill fill-p2" id="hud-p2-health"></div>
+                <div class="health-bar-red" id="hud-p2-health-red"></div>
+              </div>
+            </div>
+            <div class="hud-portraits">
+              <div class="portrait active-portrait" id="hud-p2-active-pic"></div>
+              <div class="portrait reserve-portrait" id="hud-p2-reserve-pic">
+                <span class="assist-badge" id="hud-p2-assist-cooldown">READY</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Combo Counter Overlays -->
+        <div class="combo-container p1-combo" id="p1-combo-ui">
+          <span class="combo-number" id="p1-combo-count">0</span>
+          <span class="combo-label">HITS!</span>
+          <span class="combo-damage" id="p1-combo-dmg">0 DMG</span>
+        </div>
+        <div class="combo-container p2-combo" id="p2-combo-ui">
+          <span class="combo-number" id="p2-combo-count">0</span>
+          <span class="combo-label">HITS!</span>
+          <span class="combo-damage" id="p2-combo-dmg">0 DMG</span>
+        </div>
+
+        <!-- Bottom bar: Super Meters, Tag options -->
+        <div class="hud-footer">
+          <!-- P1 Super Meter -->
+          <div class="meter-container team-left">
+            <div class="meter-bar-bg">
+              <div class="meter-bar-fill fill-p1-meter" id="hud-p1-meter"></div>
+            </div>
+            <div class="meter-value">P1 METER: <span id="hud-p1-meter-val">0</span>/100</div>
+          </div>
+
+          <!-- Screen Prompts (e.g. READY... FIGHT!, K.O., PERFECT) -->
+          <div id="announcer-message" class="announcer-msg"></div>
+
+          <!-- P2 Super Meter -->
+          <div class="meter-container team-right">
+            <div class="meter-value">P2 METER: <span id="hud-p2-meter-val">0</span>/100</div>
+            <div class="meter-bar-bg">
+              <div class="meter-bar-fill fill-p2-meter" id="hud-p2-meter"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- TRAINING CONTROL PANEL (Only in training mode) -->
+      <div id="training-panel" class="hidden">
+        <h4 class="neon-text-small glow-blue">TRAINING CONTROLS</h4>
+        <div class="training-row">
+          <label><input type="checkbox" id="train-inf-health" checked> INF HEALTH</label>
+          <label><input type="checkbox" id="train-inf-meter" checked> INF METER</label>
+        </div>
+        <div class="training-row">
+          <label><input type="checkbox" id="train-hitboxes" checked> SHOW HITBOXES</label>
+        </div>
+        <div class="training-row">
+          <span class="training-label">DUMMY ACTION:</span>
+          <select id="train-dummy-action">
+            <option value="stand">STAND</option>
+            <option value="crouch">CROUCH</option>
+            <option value="jump">JUMP</option>
+            <option value="block">AUTO BLOCK</option>
+            <option value="mimic">MIMIC PLAYER</option>
+            <option value="cpu-easy">CPU (EASY)</option>
+            <option value="cpu-medium">CPU (MEDIUM)</option>
+          </select>
+        </div>
+        <div class="frame-data-viewer" id="frame-viewer">
+          <div>STARTUP: <span id="frame-startup">0</span>f</div>
+          <div>ACTIVE: <span id="frame-active">0</span>f</div>
+          <div>RECOVERY: <span id="frame-recovery">0</span>f</div>
+        </div>
+      </div>
+
+      <!-- PAUSE MENU -->
+      <div id="pause-menu" class="menu-overlay hidden">
+        <h2 class="neon-text glow-blue">PAUSED</h2>
+        <div class="menu-buttons">
+          <button id="btn-resume" class="menu-btn">RESUME</button>
+          <button id="btn-restart" class="menu-btn">RESTART MATCH</button>
+          <button id="btn-pause-menu" class="menu-btn">MAIN MENU</button>
+        </div>
+      </div>
+
+      <!-- VICTORY SCREEN -->
+      <div id="victory-screen" class="menu-overlay hidden">
+        <h2 id="victory-title" class="neon-text glow-blue">PLAYER 1 WINS</h2>
+        <h3 id="victory-subtitle" class="sub-title">VICTORY</h3>
+        <div class="victory-details">
+          <div class="winner-avatars" id="victory-portraits">
+            <!-- Portrails will be populated dynamically -->
+          </div>
+        </div>
+        <div class="menu-buttons">
+          <button id="btn-rematch" class="menu-btn">REMATCH</button>
+          <button id="btn-victory-menu" class="menu-btn">MAIN MENU</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- TOUCH / MOBILE CONTROLLER (Hidden on desktop via media queries) -->
+    <div id="mobile-controller" class="hidden">
+      <!-- D-Pad (Left side) -->
+      <div class="dpad-container">
+        <button id="btn-touch-up" class="touch-btn key-w">▲</button>
+        <div class="dpad-row-mid">
+          <button id="btn-touch-left" class="touch-btn key-a">◀</button>
+          <button id="btn-touch-down" class="touch-btn key-s">▼</button>
+          <button id="btn-touch-right" class="touch-btn key-d">▶</button>
+        </div>
+      </div>
+
+      <!-- Combat Buttons (Right side) -->
+      <div class="combat-grid">
+        <button id="btn-touch-light" class="touch-btn key-j">L</button>
+        <button id="btn-touch-medium" class="touch-btn key-k">M</button>
+        <button id="btn-touch-heavy" class="touch-btn key-l">H</button>
+        <button id="btn-touch-sp1" class="touch-btn key-u">S1</button>
+        <button id="btn-touch-sp2" class="touch-btn key-i">S2</button>
+        <button id="btn-touch-tag" class="touch-btn key-o">TAG</button>
+        <button id="btn-touch-ult" class="touch-btn key-p">ULT</button>
+      </div>
+    </div>
+  </div>
+
+  <script type="module" src="./main.js"></script>
+</body>
+</html>
