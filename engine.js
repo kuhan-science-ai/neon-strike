@@ -238,8 +238,14 @@ class GameEngine {
       const infHealth = document.getElementById('train-inf-health').checked;
       const infMeter = document.getElementById('train-inf-meter').checked;
       if (infHealth) {
-        playerTeam.activeFighter.health = playerTeam.activeFighter.maxHealth;
-        enemyTeam.activeFighter.health = enemyTeam.activeFighter.maxHealth;
+        // Refill player health if not in hitstun/combo
+        if (playerTeam.activeFighter.state !== 'HIT' && enemyTeam.activeFighter.comboCounter === 0) {
+          playerTeam.activeFighter.health = playerTeam.activeFighter.maxHealth;
+        }
+        // Refill enemy health if not in hitstun/combo
+        if (enemyTeam.activeFighter.state !== 'HIT' && playerTeam.activeFighter.comboCounter === 0) {
+          enemyTeam.activeFighter.health = enemyTeam.activeFighter.maxHealth;
+        }
       }
       if (infMeter) {
         playerTeam.activeFighter.meter = playerTeam.activeFighter.maxMeter;
